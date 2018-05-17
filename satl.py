@@ -1,4 +1,4 @@
-import os
+from os import makedirs, path, symlink, listdir
 import hashlib
 import jsonplus as json
 
@@ -51,31 +51,46 @@ class Satl(object):
     def relate_keyword(self, keyword):
         keyword_path = self.keyword_path(keyword)
 
-        if not os.path.exists(keyword_path):
-            os.makedirs('%s/' % keyword_path)
+        if not path.exists(keyword_path):
+            makedirs('%s/' % keyword_path)
 
-        os.symlink(self.path, keyword_path)
+        symlink(self.path, keyword_path)
 
     def unrelate_keyword(self, keyword):
         raise NotImplementedError
 
     def _prepare_storage(self):
-        if not os.path.exists(self.store_path):
-            os.makedirs(self.store_path)
+        if not path.exists(self.store_path):
+            makedirs(self.store_path)
 
-        if not os.path.exists(self.data_path):
-            os.makedirs('%s/' % self.data_path)
+        if not path.exists(self.data_path):
+            makedirs('%s/' % self.data_path)
 
-        if not os.path.exists(self.path):
-            os.makedirs('%s/' % self.path)
+        if not path.exists(self.path):
+            makedirs('%s/' % self.path)
 
     def save(self):
         self._prepare_storage()        
         with open('%s/data.json' % self.path, 'w') as f:
             f.write(json.dumps(self.data))
     
-    def attach_file(self, f, name):
-        pass
+    def attach_file(self, file_body, name):
+        self._prepare_storage()
+
+        if not path.exists(self.path + '/files'):
+            makedirs('%s/' % self.path + '/files')
+
+        f = open('%s/files/%s' % (self.path, name),'wb')
+        f.write(f)
+        f.close()
+
+    def files(self):
+        self._prepare_storage()
+        path_file = self.path + '/files'
+        if not path.exists(path_file):
+            makedirs(path_file)
+        return cls._query(path_file)
+
     def load(self):
         with open('%s/data.json' % self.path, 'r') as f:
             data = json.loads(f.read())
@@ -88,30 +103,31 @@ class Satl(object):
             self.load
         return self.data['key']
 
-    def _query(self, path):
-        for item in listdir(path):
+    @classmethod
+    def _query(cls, path_file):
+        for item in listdir(path_file):
             yield Stal(enc_key=item)
 
     @classmethod
     def is_exists(cls, _id):
-        path = cls.get_path(_id)
-        if not os.path.exists(path):
+        path_file = cls.get_path(_id)
+        if not path.exists(path_file):
             return False
         return True
 
     @classmethod
     def filter(cls, keyword):
-        path = cls.keyword_path(keyword)
-        if not os.path.exists(path):
+        path_file = cls.keyword_path(keyword)
+        if not path.exists(path_file):
             raise NotFound
-        cls._query(path)
+        return cls._query(path_file)
 
     @classmethod
-    def all(cls, keyword):
-        path = '%s/%s' % (cls.store_path, cls.data_path)
-        if not os.path.exists(path):
-            os.makedirs('%s' % path)
-        cls._query(path)
+    def all(cls):
+        path_file = '%s/%s' % (cls.store_path, cls.data_path)
+        if not path.exists(path_file):
+            makedirs('%s' % path_file)
+        return cls._query(path_file)
 
     @staticmethod
     def key_generate(key):
