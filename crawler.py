@@ -46,6 +46,7 @@ def get_poi(url, data_dict, crawler_list, kind):
 
     if kind == 'resturant':
         data_dict['name'] = get_text(page.find('h1', class_='heading_title'))
+    data_dict['comment'] = get_text(page.find('div', class_='prw_reviews_text_summary_hsx'))
     data_dict['popularity'] = popularity
     data_dict['location'] = {'lat': float(lat), 'long': float(lng)}
     data_dict['images'] = images
@@ -85,11 +86,7 @@ def get_poi_list(db, url, crawler_list, kind):
 def crawl_things_to_do_city(db, keys):
     items = []
     for x in xrange(0,6):
-        if x == 0:
-            page = ''       
-        else:
-            page = 'oa%s-' % (x*30) 
-        print 'Country => ', keys['country'], keys['state']
+        
         url = top_activity_url % (keys['index'], page, keys['name'])
         items += get_poi_list(db, url, keys, 'things-to-do')
     return items
@@ -101,10 +98,39 @@ def crawl_resturant_city(db, keys):
             page = ''       
         else:
             page = 'oa%s-' % (x*30) 
-        print 'Country => ', keys['country'], keys['state']
+        
+        if 'state' in keys:
+            state = keys['state']
+        else:
+            state = keys['country']
+        
+        print 'Country => ', keys['country'], state
+        if 'name' in keys:
+            name = keys['name']
+        else:
+            name = keys['country']
+
         url = top_restaurants_url % (keys['index'], page, keys['name'])
         items += get_poi_list(db, url, keys, 'resturant')
     return items
+
+def get_detail_of_city(db, keys):
+    crawl_resturant_city(db, keys)
+    crawl_things_to_do_city(db, keys)
+
+
+def get_cities(keys):
+    url = top_activity_url % (keys['index'], '', keys['country'])
+
+    page = get_page(url)
+    elements = page.find_all('div', class_='ap_navigator')
+    items = []
+    for element in elements:
+        url_bones = element.find('a').get('href').split('-')
+        print url_bones
+        items.append({'index': url_bones[1], 'name': url_bones[3], 'state': get_text(element).replace('Things to do in ', ''), 'country': country})
+
+    return items 
 
 def get_db():
     client = MongoClient()
@@ -130,40 +156,20 @@ def create_or_update_data_mongo(db, new_data):
 
 def main():
     db = get_db()
-    cities = [
-            {'index': 'g298484', 'name': 'Moscow_Central_Russia', 'country': 'Russia', 'state': 'Moscow'},
-            {'index': 'g298507', 'name': 'St_Petersburg_Northwestern_District', 'country': 'Russia', 'state': 'Saint Petersburg'},
-            {'index': 'g294459', 'name': 'Russia', 'country': 'Russia', 'state': 'Russia'},
-            {'index': 'g294195', 'name': 'Tbilisi', 'country': 'Georgia', 'state': 'Tbilisi'},
-            {'index': 'g319823', 'name': 'Armenia_Quindio_Department', 'country': 'Armenia', 'state': 'Armenia'},
-            {'index': 'g293969', 'name': 'Turkey', 'country': 'Turkey', 'state': 'Turkey'},
-            {'index': 'g293951', 'name': 'Malaysia', 'country': 'Malaysia', 'state': 'Malaysia'},
-            {'index': 'g297576', 'name': 'Batumi_Adjara_Region', 'country': 'Georgia', 'state': 'Batumi'},
-            {'index': 'g298570', 'name': 'Kuala_Lumpur_Wilayah_Persekutuan', 'country': 'Malaysia', 'state': 'Kuala Lumpur'},
-            {'index': 'g660694', 'name': 'Penang_Island_Penang', 'country': 'Malaysia', 'state': 'Penang Island'},
-            {'index': 'g298303', 'name': 'George_Town_Penang_Island_Penang', 'country': 'Malaysia', 'state': 'George Town'},
-            {'index': 'g298283', 'name': 'Langkawi_Langkawi_District_Kedah', 'country': 'Malaysia', 'state': 'Langkawi Langkawi'},
-            {'index': 'g298307', 'name': 'Kota_Kinabalu_Kota_Kinabalu_District_West_Coast_Division_Sabah', 'country': 'Malaysia', 'state': 'Kota Kinabalu'},
-            {'index': 'g306997', 'name': 'Melaka_Central_Melaka_District_Melaka_State', 'country': 'Malaysia', 'state': 'Melaka Central'},
-            {'index': 'g293932', 'name': 'Yerevan', 'country': 'Armenia', 'state': 'Yerevan'},
-            {'index': 'g815353', 'name': 'Gyumri_Shirak_Province', 'country': 'Armenia', 'state': 'Gyumri Shirak'},
-            {'index': 'g2151208', 'name': 'Tsakhkadzor_Kotayk_Province', 'country': 'Armenia', 'state': 'Tsakhkadzor'},
-            {'index': 'g293974', 'name': 'Istanbul', 'country': 'Armenia', 'state': 'Istanbul'},
-            {'index': 'g298656', 'name': 'Ankara', 'country': 'Turkey', 'state': 'Ankara'},
-            {'index': 'g297962', 'name': 'Antalya_Turkish_Mediterranean_Coast', 'country': 'Turkey', 'state': 'Antalya'},
-            {'index': 'g298006', 'name': 'Izmir_Izmir_Province_Turkish_Aegean_Coast', 'country': 'Turkey', 'state': 'Izmir'},
-            {'index': 'g297972', 'name': 'Kusadasi_Turkish_Aegean_Coast', 'country': 'Turkey', 'state': 'Kusadasi'},
-            {'index': 'g298033', 'name': 'Marmaris_Mugla_Province_Turkish_Aegean_Coast', 'country': 'Turkey', 'state': 'Marmaris Mugla'},
-            {'index': 'g298031', 'name': 'Fethiye_Mugla_Province_Turkish_Aegean_Coast', 'country': 'Turkey', 'state': 'Fethiye Mugla'},
-            {'index': 'g298520', 'name': 'Kazan_Republic_of_Tatarstan_Volga_District', 'country': 'Russia', 'state': 'Kazan'},
-            {'index': 'g298540', 'name': 'Yekaterinburg_Sverdlovsk_Oblast_Urals_District', 'country': 'Russia', 'state': 'Yekaterinburg'},
-            {'index': 'g298536', 'name': 'Sochi_Greater_Sochi_Krasnodar_Krai_Southern_District', 'country': 'Russia', 'state': 'Sochi'},
-            {'index': 'g298515', 'name': 'Nizhny_Novgorod_Nizhny_Novgorod_Oblast_Volga_District', 'country': 'Russia', 'state': 'Nizhny Novgorod'},
-            
+    countries = [
+            {'index': 'g294000', 'country': 'Iraq'},
+            {'index': 'g293860', 'country': 'India'},
+            {'index': 'g294459', 'country': 'Russia'},
+            {'index': 'g293969', 'country': 'Turkey'},
+            {'index': 'g293951', 'country': 'Malaysia'},
             ]
+    cities = []
+    for country in countries:
+        cities += get_cities(country)
+
     for item in cities:
-        # crawl_things_to_do_city(db, item)
-        crawl_resturant_city(db, item)
+        get_detail_of_city(db, keys)
+
     return
 
 if __name__ == "__main__":
