@@ -1,6 +1,7 @@
 from datetime import datetime
 import requests
-from pymongo import MongoClient
+from satl import Satl
+# from pymongo import MongoClient
 from bs4 import BeautifulSoup
 import re
 
@@ -59,7 +60,7 @@ def get_poi(url, data_dict, crawler_list, kind):
     data_dict['state'] = crawler_list['state']
     return data_dict
 
-def get_poi_list(db, url, crawler_list, kind):
+def get_poi_list(url, crawler_list, kind):
     pois = []
     page = get_page(url)
     if kind == 'things-to-do':
@@ -71,7 +72,7 @@ def get_poi_list(db, url, crawler_list, kind):
         poi = {'href': item.find('a').get('href'),
             'name': item.find('a').get_text().strip()}
         url = base_url + poi['href']
-        if is_exists(db, url):
+        if is_exists(url):
             continue
         poi_data = ''
         try:
@@ -79,10 +80,10 @@ def get_poi_list(db, url, crawler_list, kind):
         except Exception as e:
             print('Error to get', e)
         if poi_data:
-            create_or_update_data_mongo(db, poi_data)
+            set_data(poi_data)
     return pois
 
-def crawl_things_to_do_city(db, keys):
+def crawl_things_to_do_city(keys):
     items = []
     for x in xrange(0,6):
         if x == 0:
@@ -91,10 +92,10 @@ def crawl_things_to_do_city(db, keys):
             page = 'oa%s-' % (x*30) 
         print 'Country => ', keys['country'], keys['state']
         url = top_activity_url % (keys['index'], page, keys['name'])
-        items += get_poi_list(db, url, keys, 'things-to-do')
+        items += get_poi_list(url, keys, 'things-to-do')
     return items
 
-def crawl_resturant_city(db, keys):
+def crawl_resturant_city(keys):
     items = []
     for x in xrange(0,1):
         if x == 0:
@@ -103,33 +104,25 @@ def crawl_resturant_city(db, keys):
             page = 'oa%s-' % (x*30) 
         print 'Country => ', keys['country'], keys['state']
         url = top_restaurants_url % (keys['index'], page, keys['name'])
-        items += get_poi_list(db, url, keys, 'resturant')
+        items += get_poi_list(url, keys, 'resturant')
     return items
 
-def get_db():
-    client = MongoClient()
-    db = client['world']
-    return db
+def is_exists(url):
+    return Satl.is_exists(url)
 
-def insert_data(db, new_data):
-    new_data['create_date'] = datetime.now()
-    new_data['updated'] = False
-    db.location.insert(new_data)
-    return new_data['_id']
-
-def is_exists(db, url):
-    if db.location.find_one({'url': url}):
-        return True
-    return False
-
-def create_or_update_data_mongo(db, new_data):
-    if not is_exists(db, new_data['url']):
-        return insert_data(db, new_data)
+def set_data(new_data):
+    if not is_exists(new_data['url']):
+        new_data['create_date'] = datetime.now()
+        new_data['updated'] = False
+        data = Satl(new_data['url'], data=new_data)
+        print new_data['url']
+        print data._id
+        data.save()
+        return data._id
     print('exists')
     return False
 
 def main():
-    db = get_db()
     cities = [
             {'index': 'g298484', 'name': 'Moscow_Central_Russia', 'country': 'Russia', 'state': 'Moscow'},
             {'index': 'g298507', 'name': 'St_Petersburg_Northwestern_District', 'country': 'Russia', 'state': 'Saint Petersburg'},
@@ -162,8 +155,8 @@ def main():
             
             ]
     for item in cities:
-        # crawl_things_to_do_city(db, item)
-        crawl_resturant_city(db, item)
+        crawl_things_to_do_city(item)
+        crawl_resturant_city(item)
     return
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+satl/*
 # Distribution / packaging
 .Python
 build/
