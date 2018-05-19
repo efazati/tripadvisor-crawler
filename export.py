@@ -1,6 +1,7 @@
 import simplekml
 from pymongo import MongoClient
 
+
 def generate_map(name):
     def get_db():
         client = MongoClient()
@@ -11,10 +12,10 @@ def generate_map(name):
 
     todo = {}
     resturant = {}
-    todo['all'] =simplekml.Kml()
-    todo['top'] =simplekml.Kml()
-    resturant['all'] =simplekml.Kml()
-    resturant['top'] =simplekml.Kml()
+    todo['all'] = simplekml.Kml()
+    todo['top'] = simplekml.Kml()
+    resturant['all'] = simplekml.Kml()
+    resturant['top'] = simplekml.Kml()
 
     points = db.location.find({'country': name})
     for point in points:
@@ -46,8 +47,10 @@ def generate_map(name):
         %s <br/><br/>
         %s <br/><br/>
         %s
-        """ % (images, point['popularity'], point['hours'], point['phone'], point['address'], point['description'], point['url'])
-        kml_instance.newpoint(name='%s - %s' % (point['name'], rank), coords=[(point['location']['long'],point['location']['lat'])], description=description)
+        """ % (images, point['popularity'], point['hours'], point['phone'], point['address'], point['description'],
+               point['url'])
+        kml_instance.newpoint(name='%s - %s' % (point['name'], rank),
+                              coords=[(point['location']['long'], point['location']['lat'])], description=description)
 
     todo['all'].save("kml/%s_todo_all.kml" % name)
     todo['top'].save("kml/%s_todo_top.kml" % name)

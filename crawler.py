@@ -19,6 +19,7 @@ base_url = 'https://www.tripadvisor.com'
 top_activity_url = base_url + '/Attractions-%s-%sActivities-%s.html'
 top_restaurants_url = base_url + '/Restaurants-%s-%sActivities-%s.html'
 
+
 def get_page(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) Gecko/20100101 Firefox/55.0'
@@ -27,6 +28,7 @@ def get_page(url):
     logger.info("Get => %s" % url)
     soup = BeautifulSoup(html.content, 'html.parser')
     return soup
+
 
 def get_text(item):
     if item:
@@ -70,6 +72,7 @@ def get_poi(url, data_dict, crawler_list, kind):
     data_dict['state'] = crawler_list['state']
     return data_dict
 
+
 def get_poi_list(url, crawler_list, kind):
     pois = []
     page = get_page(url)
@@ -80,7 +83,7 @@ def get_poi_list(url, crawler_list, kind):
 
     for item in items:
         poi = {'href': item.find('a').get('href'),
-            'name': item.find('a').get_text().strip()}
+               'name': item.find('a').get_text().strip()}
         url = base_url + poi['href']
         if is_exists(url):
             continue
@@ -93,17 +96,18 @@ def get_poi_list(url, crawler_list, kind):
             set_data(poi_data)
     return pois
 
+
 def make_pages_and_normalize_input(loop, keys):
     if loop == 0:
-        page = ''       
+        page = ''
     else:
-        page = 'oa%s-' % (loop*30) 
-    
+        page = 'oa%s-' % (loop * 30)
+
     if 'state' in keys:
         state = keys['state']
     else:
         state = keys['country']
-    
+
     logger.info("Country => %s - %s" % (keys['country'], state))
 
     if 'name' in keys:
@@ -113,21 +117,24 @@ def make_pages_and_normalize_input(loop, keys):
 
     return page, state, name
 
+
 def crawl_things_to_do_city(keys):
     items = []
-    for x in xrange(0,6):
+    for x in xrange(0, 6):
         page, state, name = make_pages_and_normalize_input(x, keys)
         url = top_activity_url % (keys['index'], page, name)
         items += get_poi_list(url, keys, 'things-to-do')
     return items
 
+
 def crawl_resturant_city(keys):
     items = []
-    for x in xrange(0,1):
+    for x in xrange(0, 1):
         page, state, name = make_pages_and_normalize_input(x, keys)
         url = top_restaurants_url % (keys['index'], page, keys['name'])
         items += get_poi_list(url, keys, 'resturant')
     return items
+
 
 def get_detail_of_city(keys):
     crawl_resturant_city(keys)
@@ -143,17 +150,20 @@ def get_cities(keys):
     items = []
     for element in elements:
         url_bones = element.find('a').get('href').split('-')
-        if len(url_bones) == 4 :
+        if len(url_bones) == 4:
             name = url_bones[3].replace('.html', '')
         else:
             name = url_bones[4].replace('.html', '')
-        items.append({'index': url_bones[1], 'name': url_bones[3], 'state': get_text(element).replace('Things to do in ', ''), 'country': keys['country']})
+        items.append(
+            {'index': url_bones[1], 'name': url_bones[3], 'state': get_text(element).replace('Things to do in ', ''),
+             'country': keys['country']})
 
-    return items 
+    return items
 
 
 def is_exists(url):
     return Satl.is_exists(url)
+
 
 def set_data(data):
     if not is_exists(data['url']):
@@ -165,14 +175,15 @@ def set_data(data):
         return satl._id
     return False
 
+
 def main():
     countries = [
-            {'index': 'g294000', 'country': 'Iraq'},
-            {'index': 'g293860', 'country': 'India'},
-            {'index': 'g294459', 'country': 'Russia'},
-            {'index': 'g293969', 'country': 'Turkey'},
-            {'index': 'g293951', 'country': 'Malaysia'},
-            ]
+        {'index': 'g294000', 'country': 'Iraq'},
+        {'index': 'g293860', 'country': 'India'},
+        {'index': 'g294459', 'country': 'Russia'},
+        {'index': 'g293969', 'country': 'Turkey'},
+        {'index': 'g293951', 'country': 'Malaysia'},
+    ]
     cities = []
     for country in countries:
         cities += get_cities(country)
@@ -180,6 +191,7 @@ def main():
     for item in cities:
         get_detail_of_city(item)
     return
+
 
 if __name__ == "__main__":
     main()
