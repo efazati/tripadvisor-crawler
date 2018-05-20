@@ -10,18 +10,21 @@ also you can generate kml from that things for import to google map
 
 
 .. code-block:: sh
+
 	$ git clone https://github.com/efazati/tripadvisor-crawler.git
 	$ cd tripadvisor-crawler
 
 now you can create sample file for get detail of your countries
 
 .. code-block:: sh
+
 	$ nano sample.py
 
 after that you can find index id from url of tripadvisor link
 
 
 .. code-block:: python
+
 	from crawler import get_cities, get_detail_of_city
 
 	def main():
