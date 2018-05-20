@@ -166,10 +166,17 @@ class Satl(object):
 
     @classmethod
     def all(cls):
-        path_file = '%s/%s' % (cls.store_path, cls.data_path)
+        path_file = cls.data_path
         if not path.exists(path_file):
             makedirs('%s' % path_file)
         return cls._query(path_file)
+
+    @classmethod
+    def count(cls):
+        path_file = cls.data_path
+        if not path.exists(path_file):
+            makedirs('%s' % path_file)
+        return len(listdir(path_file))
 
     @staticmethod
     def key_generate(key):

@@ -1,4 +1,3 @@
-import urllib2
 from datetime import datetime
 from time import sleep
 import requests
@@ -194,14 +193,14 @@ def set_data(data):
 
 def main():
     countries = [
-        {'index': 'g294000', 'country': 'Iraq'},
-        # {'index': 'g293860', 'country': 'India'},
-        # {'index': 'g294211', 'country': 'China'},
-        # {'index': 'g187275', 'country': 'Germany'},
-        # {'index': 'g187768', 'country': 'Italy'},
-        # {'index': 'g294459', 'country': 'Russia'},
-        # {'index': 'g293969', 'country': 'Turkey'},
-        # {'index': 'g293951', 'country': 'Malaysia'},
+        # {'index': 'g294000', 'country': 'Iraq'},
+        {'index': 'g293860', 'country': 'India'},
+        {'index': 'g294211', 'country': 'China'},
+        {'index': 'g187275', 'country': 'Germany'},
+        {'index': 'g187768', 'country': 'Italy'},
+        {'index': 'g294459', 'country': 'Russia'},
+        {'index': 'g293969', 'country': 'Turkey'},
+        {'index': 'g293951', 'country': 'Malaysia'},
     ]
     cities = []
     for country in countries:
