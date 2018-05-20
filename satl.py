@@ -35,11 +35,6 @@ class Satl(object):
         else:
             self.data = {}
 
-    @classmethod
-    def get_path(cls, key=None, _id=None):
-        if key and not _id:
-            _id = cls.key_generate(key)
-        return '%s/%s' % (cls.data_path, _id)
 
     @property
     def path(self):
@@ -51,9 +46,19 @@ class Satl(object):
     def create_date(self):
         return datetime.fromtimestamp(stat(self.path).st_mtime)
 
+    @property
+    def pk(self):
+        return self._id
+
     @classmethod
     def keyword_path(cls, keyword):
         return '%s/%s' % (cls.keyword_path, cls.key_generate(keyword))
+
+    @classmethod
+    def get_path(cls, key=None, _id=None):
+        if key and not _id:
+            _id = cls.key_generate(key)
+        return '%s/%s' % (cls.data_path, _id)
 
     def set_keywords(self, keywords):
         self.keywords = keywords
@@ -97,7 +102,7 @@ class Satl(object):
             makedirs(self.path + '/files')
 
         f = open('%s/files/%s' % (self.path, name), 'wb')
-        f.write(f)
+        f.write(file_body)
         f.close()
 
     def attach_file_path(self, file_path):
@@ -114,6 +119,13 @@ class Satl(object):
         if not path.exists(path_file):
             makedirs(path_file)
         return self._query(path_file)
+
+    def count_files(self):
+        self._prepare_storage()
+        path_file = self.path + '/files/'
+        if not path.exists(path_file):
+            makedirs(path_file)
+        return len(listdir(path_file))
 
     def load(self):
         path_file = '%s/data.json' % self.path

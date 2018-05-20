@@ -1,18 +1,18 @@
+import urllib2
 from datetime import datetime
+from time import sleep
 import requests
 from satl import Satl
-# from pymongo import MongoClient
 from bs4 import BeautifulSoup
 import re
 import logging
-import coloredlogs
 
-COLOREDLOGS_LOG_FORMAT = '[%(hostname)s] %(asctime)s %(message)s'
+from utils.log import ColorLogFormatter
 
 handler = logging.StreamHandler()
-handler.addFilter(coloredlogs.HostNameFilter())
-handler.setFormatter(logging.Formatter('[%(levelname)s] %(message)s'))
+handler.setFormatter(ColorLogFormatter())
 logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 base_url = 'https://www.tripadvisor.com'
@@ -24,8 +24,9 @@ def get_page(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) Gecko/20100101 Firefox/55.0'
     }
-    html = requests.get(url, headers=headers)
     logger.info("Get => %s" % url)
+    html = requests.get(url, headers=headers)
+    sleep(2)
     soup = BeautifulSoup(html.content, 'html.parser')
     return soup
 
@@ -118,6 +119,19 @@ def make_pages_and_normalize_input(loop, keys):
     return page, state, name
 
 
+def get_images(satl_obj):
+    count = satl_obj.count_files()
+    if count != 0:
+        return False
+    index = 1
+    for url in satl_obj.get('images'):
+        logger.debug('Download image => %s', url)
+        img = requests.get(url)
+        satl_obj.attach_file_object(img.content, '%s.jpg' % index)
+        index += 1
+    return True
+
+
 def crawl_things_to_do_city(keys):
     items = []
     for x in xrange(0, 6):
@@ -170,19 +184,24 @@ def set_data(data):
         data['create_date'] = datetime.now()
         data['updated'] = False
         satl = Satl(data['url'], data=data)
-        logger.info("Save => %s-%s" % (satl._id, satl.get('name')))
+        logger.info("Save => %s - %s" % (satl.pk, satl.get('name')))
         satl.save()
-        return satl._id
+    else:
+        satl = Satl(data['url']).load()
+    get_images(satl)
     return False
 
 
 def main():
     countries = [
         {'index': 'g294000', 'country': 'Iraq'},
-        {'index': 'g293860', 'country': 'India'},
-        {'index': 'g294459', 'country': 'Russia'},
-        {'index': 'g293969', 'country': 'Turkey'},
-        {'index': 'g293951', 'country': 'Malaysia'},
+        # {'index': 'g293860', 'country': 'India'},
+        # {'index': 'g294211', 'country': 'China'},
+        # {'index': 'g187275', 'country': 'Germany'},
+        # {'index': 'g187768', 'country': 'Italy'},
+        # {'index': 'g294459', 'country': 'Russia'},
+        # {'index': 'g293969', 'country': 'Turkey'},
+        # {'index': 'g293951', 'country': 'Malaysia'},
     ]
     cities = []
     for country in countries:
