@@ -4,28 +4,23 @@ import requests
 from satl import Satl
 from bs4 import BeautifulSoup
 import re
-import logging
 
-from utils.log import ColorLogFormatter
-
-handler = logging.StreamHandler()
-handler.setFormatter(ColorLogFormatter())
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.addHandler(handler)
+from utils.printer import printer
 
 base_url = 'https://www.tripadvisor.com'
 top_activity_url = base_url + '/Attractions-%s-%sActivities-%s.html'
 top_restaurants_url = base_url + '/Restaurants-%s-%sActivities-%s.html'
 
-
 def get_page(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) Gecko/20100101 Firefox/55.0'
     }
-    logger.info("Get => %s" % url)
-    html = requests.get(url, headers=headers)
-    sleep(2)
+    printer('blue', 'Get', url)
+    try:
+        html = requests.get(url, headers=headers)
+    except:
+        pass
+    sleep(1)
     soup = BeautifulSoup(html.content, 'html.parser')
     return soup
 
@@ -70,12 +65,14 @@ def get_poi(url, data_dict, crawler_list, kind):
     data_dict['type'] = kind
     data_dict['country'] = crawler_list['country']
     data_dict['state'] = crawler_list['state']
+    printer('yellow', kind, '%s - %s' % (data_dict['country'], data_dict['state']))
     return data_dict
 
 
 def get_poi_list(url, crawler_list, kind):
     pois = []
     page = get_page(url)
+    last_statement = url.split('-')[-1]
     if kind == 'things-to-do':
         items = page.find_all('div', class_='attraction_clarity_cell')
     else:
@@ -88,10 +85,14 @@ def get_poi_list(url, crawler_list, kind):
         if is_exists(url):
             continue
         poi_data = ''
+        if url.split('-')[-1] == last_statement or url.endswith('html.html'):
+            printer('yellow', 'Not download', url)
+            continue
         try:
             poi_data = get_poi(url, poi, crawler_list, kind)
         except Exception as e:
-            logger.error("Error to get %s - %s" % (url, e))
+            msg = '%s - %s' % (url, e)
+            printer('red', 'Error', msg)
         if poi_data:
             set_data(poi_data)
     return pois
@@ -108,7 +109,7 @@ def make_pages_and_normalize_input(loop, keys):
     else:
         state = keys['country']
 
-    logger.info("Country => %s - %s" % (keys['country'], state))
+    printer('green', 'Country', keys['country'])
 
     if 'name' in keys:
         name = keys['name']
@@ -124,29 +125,30 @@ def get_images(satl_obj):
         return False
     index = 1
     for url in satl_obj.get('images'):
-        logger.debug('Download image => %s', url)
-        img = requests.get(url)
+        printer('cyan', 'Download', url)
+        try:
+            img = requests.get(url)
+        except:
+            pass
         satl_obj.attach_file_object(img.content, '%s.jpg' % index)
         index += 1
     return True
 
 
 def crawl_things_to_do_city(keys):
-    items = []
     for x in xrange(0, 6):
         page, state, name = make_pages_and_normalize_input(x, keys)
         url = top_activity_url % (keys['index'], page, name)
-        items += get_poi_list(url, keys, 'things-to-do')
-    return items
+        get_poi_list(url, keys, 'things-to-do')
+    return True
 
 
 def crawl_resturant_city(keys):
-    items = []
     for x in xrange(0, 1):
         page, state, name = make_pages_and_normalize_input(x, keys)
         url = top_restaurants_url % (keys['index'], page, keys['name'])
-        items += get_poi_list(url, keys, 'resturant')
-    return items
+        get_poi_list(url, keys, 'resturant')
+    return True
 
 
 def get_detail_of_city(keys):
@@ -179,28 +181,31 @@ def is_exists(url):
 
 
 def set_data(data):
-    if not is_exists(data['url']):
-        data['create_date'] = datetime.now()
-        data['updated'] = False
-        satl = Satl(data['url'], data=data)
-        logger.info("Save => %s - %s" % (satl.pk, satl.get('name')))
-        satl.save()
-    else:
-        satl = Satl(data['url']).load()
+    # if is_exists(data['url']):
+    #     return False
+    data['create_date'] = datetime.now()
+    data['updated'] = False
+    satl = Satl(data['url'], data=data)
+    printer('magenta', 'Save', " %s - %s" % (satl.pk, satl.get('name')))
+    satl.save()
     get_images(satl)
+
+    # this part writen beacuse of update images
+    # else:
+    #     satl = Satl(data['url']).load()
     return False
 
 
 def main():
     countries = [
         {'index': 'g293998', 'country': 'Iran'},
-        {'index': 'g293860', 'country': 'India'},
-        {'index': 'g294211', 'country': 'China'},
-        {'index': 'g187275', 'country': 'Germany'},
-        {'index': 'g187768', 'country': 'Italy'},
-        {'index': 'g294459', 'country': 'Russia'},
-        {'index': 'g293969', 'country': 'Turkey'},
-        {'index': 'g293951', 'country': 'Malaysia'},
+        # {'index': 'g293860', 'country': 'India'},
+        # {'index': 'g294211', 'country': 'China'},
+        # {'index': 'g187275', 'country': 'Germany'},
+        # {'index': 'g187768', 'country': 'Italy'},
+        # {'index': 'g294459', 'country': 'Russia'},
+        # {'index': 'g293969', 'country': 'Turkey'},
+        # {'index': 'g293951', 'country': 'Malaysia'},
     ]
     cities = []
     for country in countries:

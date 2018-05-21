@@ -57,7 +57,7 @@ class Satl(object):
     @classmethod
     def get_path(cls, key=None, _id=None):
         if key and not _id:
-            _id = cls.key_generate(key)
+            _id = cls.id_generate(key)
         return '%s/%s' % (cls.data_path, _id)
 
     def set_keywords(self, keywords):
@@ -147,8 +147,8 @@ class Satl(object):
             yield Satl(_id=item)
 
     @classmethod
-    def is_exists(cls, _id):
-        path_file = cls.get_path(_id)
+    def is_exists(cls, key):
+        path_file = cls.get_path(key=key)
         if not path.exists(path_file):
             return False
         return True
@@ -177,6 +177,11 @@ class Satl(object):
         if not path.exists(path_file):
             makedirs('%s' % path_file)
         return len(listdir(path_file))
+
+
+    @staticmethod
+    def id_generate(key):
+        return 'satl_' + hashlib.sha1(key).hexdigest()
 
     @staticmethod
     def key_generate(key):
