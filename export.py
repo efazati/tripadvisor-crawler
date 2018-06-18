@@ -1,9 +1,10 @@
 from os import path, makedirs
 import simplekml
 from satl import Satl
+import shutil
 
 
-def main():
+def main(small_version=True):
     maps = {}
     print(Satl.count())
     for satl in Satl.all():
@@ -31,10 +32,30 @@ def main():
             kml_instance = kml_instance['low']
 
         images = ''
-        index = 1
-        for image in point['images']:
-            images += "<img src='http://iranatrip.com/world/%s/files/%s.jpg' />" % (satl.pk, index)
-            index += 1
+        if small_version:
+            try:
+                if point['images']:
+                    folder = 'kml/%s/images/' % point['country']
+                    if not path.exists(folder):
+                        makedirs(folder)
+                    try:
+                        shutil.copy('satl/data/%s/files/1.jpg' % satl.pk, '%s/%s.jpg' % (folder, satl.pk))
+                    except:
+                        shutil.copy('satl/data/%s/files/2.jpg' % satl.pk, '%s/%s.jpg' % (folder, satl.pk))
+
+                    images += "<img src='http://iranatrip.com/world/kml/%s/images/%s.jpg' />" % (point['country'], satl.pk)
+            except:
+                pass
+
+        else:
+            index = 1
+            for image in point['images']:
+                images += "<img src='http://iranatrip.com/world/%s/files/%s.jpg' />" % (satl.pk, index)
+                index += 1
+
+        comment = ''
+        if 'comment' in point:
+            comment = point['comment']
         description = """%s
         <br/>
         %s <br/>
@@ -43,8 +64,10 @@ def main():
         %s <br/><br/>
         %s <br/><br/>
         %s
+         <br/><br/>
+         %s
         """ % (images, point['popularity'], point['hours'], point['phone'], point['address'], point['description'],
-               point['url'])
+               comment, point['url'])
         kml_instance.newpoint(name='%s - %s' % (point['name'], rank),
                               coords=[(point['location']['long'], point['location']['lat'])], description=description)
 

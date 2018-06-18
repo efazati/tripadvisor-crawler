@@ -72,7 +72,6 @@ def get_poi(url, data_dict, crawler_list, kind):
 def get_poi_list(url, crawler_list, kind):
     pois = []
     page = get_page(url)
-    last_statement = url.split('-')[-1]
     if kind == 'things-to-do':
         items = page.find_all('div', class_='attraction_clarity_cell')
     else:
@@ -85,7 +84,7 @@ def get_poi_list(url, crawler_list, kind):
         if is_exists(url):
             continue
         poi_data = ''
-        if url.split('-')[-1] == last_statement or url.endswith('html.html'):
+        if url.endswith('html.html'):
             printer('yellow', 'Not download', url)
             continue
         try:
@@ -128,9 +127,9 @@ def get_images(satl_obj):
         printer('cyan', 'Download', url)
         try:
             img = requests.get(url)
+            satl_obj.attach_file_object(img.content, '%s.jpg' % index)
         except:
             pass
-        satl_obj.attach_file_object(img.content, '%s.jpg' % index)
         index += 1
     return True
 
@@ -189,23 +188,27 @@ def set_data(data):
     printer('magenta', 'Save', " %s - %s" % (satl.pk, satl.get('name')))
     satl.save()
     get_images(satl)
+    
 
     # this part writen beacuse of update images
     # else:
     #     satl = Satl(data['url']).load()
     return False
 
-
+ 
 def main():
     countries = [
-        {'index': 'g293998', 'country': 'Iran'},
+        # {'index': 'g293998', 'country': 'Iran'},
         # {'index': 'g293860', 'country': 'India'},
+        # {'index': 'g294459', 'country': 'Russia'},
         # {'index': 'g294211', 'country': 'China'},
         # {'index': 'g187275', 'country': 'Germany'},
         # {'index': 'g187768', 'country': 'Italy'},
-        # {'index': 'g294459', 'country': 'Russia'},
         # {'index': 'g293969', 'country': 'Turkey'},
+        # {'index': 'g187427', 'country': 'Spain'}, 
+        # {'index': 'g187070', 'country': 'France'},
         # {'index': 'g293951', 'country': 'Malaysia'},
+        {'index': 'g293915', 'country': 'Thailand'},
     ]
     cities = []
     for country in countries:
